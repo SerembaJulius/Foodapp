@@ -15,7 +15,8 @@ type ProductListItemProps={
 //custom component
 const ProductListItem =({product}: ProductListItemProps)=>{
   return(
-    <Link href={'/${product.id}'} asChild>
+    // Link href={'/(tabs)/menu/[id]'} asChild>
+    <Link href={'/menu/${product.id}'} asChild>
       <Pressable style={styles.container}>
         <Image source={{uri: product.image || defaultPizzaImage }} style={styles.image} resizeMode="contain"/>
         <Text style={styles.title}>{product.name}</Text>
