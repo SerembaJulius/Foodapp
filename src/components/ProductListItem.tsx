@@ -1,6 +1,6 @@
 import { StyleSheet, Image, Text, View, Pressable } from 'react-native';
 import Colors from '../constants/Colors';
-import products from '../../assets/data/products';
+import products from '@assets/data/products';
 import {Product} from '../types'
 import { Link } from 'expo-router';
 //default pizza image
@@ -16,7 +16,8 @@ type ProductListItemProps={
 const ProductListItem =({product}: ProductListItemProps)=>{
   return(
     // Link href={'/(tabs)/menu/[id]'} asChild>
-    <Link href={'/menu/${product.id}'} asChild>
+    <Link href={`/menu/${product.id}`} asChild>
+
       <Pressable style={styles.container}>
         <Image source={{uri: product.image || defaultPizzaImage }} style={styles.image} resizeMode="contain"/>
         <Text style={styles.title}>{product.name}</Text>
