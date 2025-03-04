@@ -1,66 +1,86 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { useColorScheme } from '@components/useColorScheme';
 import { CartProvider } from '@providers/CartProvider';
+import AuthProvider, { useAuth } from 'providers/AuthProvider';
+import { ActivityIndicator, View } from 'react-native';
 
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: '(tabs)',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+  const [isAppReady, setIsAppReady] = useState(false);
 
   useEffect(() => {
-    if (loaded) {
+    if (fontError) throw fontError;
+  }, [fontError]);
+
+  useEffect(() => {
+    if (fontsLoaded) {
       SplashScreen.hideAsync();
+      setIsAppReady(true); // Mark app as ready once fonts are loaded
     }
-  }, [loaded]);
+  }, [fontsLoaded]);
 
-  if (!loaded) {
+  // Show nothing while fonts are loading or app is not ready
+  if (!fontsLoaded || !isAppReady) {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
+  );
 }
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const { isAdmin, session, loading } = useAuth();
 
+  // Show a loading indicator while checking auth state
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  // Render the navigation stack
   return (
-    
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <CartProvider>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <CartProvider>
         <Stack>
-          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-          <Stack.Screen name="(user)" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="cart" options={{ presentation: 'modal' }} />
+          {/* Redirect to sign-in page if there's no session */}
+          {!session ? (
+            <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+          ) : (
+            <>
+              {/* Redirect non-admin users to the home screen */}
+              {!isAdmin && <Redirect href={'/'} />}
+              <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+              <Stack.Screen name="(user)" options={{ headerShown: false }} />
+              <Stack.Screen name="cart" options={{ presentation: 'modal' }} />
+            </>
+          )}
         </Stack>
-        </CartProvider>
-      </ThemeProvider>
-    
+      </CartProvider>
+    </ThemeProvider>
   );
 }
